@@ -1,0 +1,58 @@
+# .github/workflows/deploy.yml
+name: Deploy NGINX to EC2
+
+# When to trigger this workflow
+on:
+  push:
+    branches: [ main ]  # Runs when code is pushed to main branch
+  workflow_dispatch:    # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Use GitHub's Ubuntu runner
+    
+    steps:
+    # Step 1: Get our code from the repository
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    # Step 2: Install Ansible on the GitHub runner
+    - name: Install Ansible
+      run: |
+        sudo apt update
+        sudo apt install -y ansible
+        
+    # Step 3: Setup SSH key for connecting to EC2
+    - name: Setup SSH key
+      run: |
+        # Create .ssh directory with proper permissions
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        
+        # Save the private key from GitHub secrets
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        
+        # Add EC2 to known hosts to avoid SSH prompt
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        
+    # Step 4: Test connection to EC2
+    - name: Test SSH connection
+      run: |
+        ssh -o ConnectTimeout=10 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH connection successful'"
+        
+    # Step 5: Run Ansible playbook to deploy NGINX
+    - name: Deploy NGINX with Ansible
+      run: |
+        cd ansible
+        ansible-playbook -i inventory/hosts.yml playbooks/deploy-nginx.yml
+        
+    # Step 6: Verify deployment
+    - name: Verify NGINX deployment
+      run: |
+        # Wait a moment for NGINX to fully start
+        sleep 10
+        
+        # Test if NGINX is responding
+        curl -f http://${{ secrets.EC2_HOST }} || exit 1
+        echo "✅ NGINX is successfully deployed and responding!"
