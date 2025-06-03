@@ -109,7 +109,6 @@
       debug:
         msg: |
           NGINX Deployment Successful!
-          Access your site at: http://{{ ansible_default_ipv4.address }}
           NGINX Status: {{ nginx_test.status }}
       when: nginx_test.status == 200
       tags: [verification]

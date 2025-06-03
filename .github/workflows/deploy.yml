@@ -5,6 +5,10 @@ name: Deploy NGINX to EC2
 on:
   push:
     branches: [ main ]  # Runs when code is pushed to main branch
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '*.md' 
   workflow_dispatch:    # Allows manual trigger from GitHub UI
 
 jobs:

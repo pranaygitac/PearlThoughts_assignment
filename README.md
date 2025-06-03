@@ -69,6 +69,26 @@ The Ansible playbook performs:
 
 ---
 
+## How to Use Tags
+
+🏃 Run With Tags:
+
+```bash
+
+ansible-playbook deploy-nginx.yml --tags "nginx"
+
+```
+
+⛔ Skip Tags:
+
+```bash
+
+ansible-playbook deploy-nginx.yml --skip-tags "security"
+
+```
+
+
+
 ## Notes
 
 - Make sure your EC2 instance’s security group allows inbound SSH (port 22) and HTTP (port 80) traffic.
