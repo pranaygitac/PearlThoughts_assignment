@@ -9,12 +9,14 @@
     nginx_port: 80
 
   tasks:
+    # Task 1: Update apt package cache
     - name: Update apt package cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
       tags: [system]
 
+    # Task 2: Install NGINX
     - name: Install NGINX
       apt:
         name: nginx
@@ -22,6 +24,7 @@
       notify: restart nginx
       tags: [nginx]
 
+    # Task 3: Start and enable NGINX service
     - name: Start and enable NGINX service
       systemd:
         name: nginx
@@ -29,6 +32,7 @@
         enabled: yes
       tags: [nginx]
 
+    # Task 4: Deploy custom index.html to NGINX root
     - name: Deploy custom index.html to NGINX root
       copy:
         dest: /var/www/html/index.html
@@ -49,14 +53,29 @@
             </style>
           </head>
           <body>
-            <h1>Hello pranay sawant</h1>
-            <h2>Instance ID: <span style="color:green">{{ ansible_ec2_instance_id | default('i-unknown') }}</span></h2>
-            <p>Welcome to crimson typhoon Channel</p>
+            <h1>Hello this is Pranay Sawant</h1>
+            <h2>YT: <span style="color:green">devopsSolutions</span></h2>
+            <p>pls like and suscribe</p>
           </body>
           </html>
-      notify: restart nginx
       tags: [nginx, content]
 
+    # ----------------------------------------
+    # Optional: Copy full website folder
+    # Uncomment this block if using /website dir
+    # ----------------------------------------
+    #
+    # - name: Copy website folder to NGINX root
+    #   copy:
+    #     src: ../website/
+    #     dest: /var/www/html/
+    #     owner: www-data
+    #     group: www-data
+    #     mode: '0644'
+    #   notify: restart nginx
+    #   tags: [nginx, content]
+
+    # Task 5: Configure UFW firewall
     - name: Allow HTTP traffic through firewall
       ufw:
         rule: allow
@@ -77,6 +96,7 @@
         policy: deny
       tags: [security]
 
+    # Task 6: Verify NGINX is serving content
     - name: Test NGINX is responding
       uri:
         url: "http://localhost:{{ nginx_port }}"
