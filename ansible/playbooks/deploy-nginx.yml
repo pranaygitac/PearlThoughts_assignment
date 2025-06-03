@@ -1,73 +1,90 @@
 # ansible/playbooks/deploy-nginx.yml
 ---
 - name: Deploy NGINX to EC2 Instance
-  hosts: ec2_servers          # Target servers from inventory
-  become: yes                 # Use sudo privileges
-  gather_facts: yes          # Collect system information
-  
+  hosts: ec2_servers
+  become: yes
+  gather_facts: yes
+
   vars:
-    nginx_port: 80           # Port NGINX will listen on
-    
+    nginx_port: 80
+
   tasks:
-    # Task 1: Update system packages
-    # Why: Ensures we have latest security patches
     - name: Update apt package cache
       apt:
         update_cache: yes
-        cache_valid_time: 3600  # Cache valid for 1 hour
+        cache_valid_time: 3600
       tags: [system]
-      
-    # Task 2: Install NGINX
-    # Why: This is our main web server
+
     - name: Install NGINX
       apt:
         name: nginx
-        state: present          # Ensure it's installed
-      notify: restart nginx     # Trigger restart if installed
+        state: present
+      notify: restart nginx
       tags: [nginx]
-      
-    # Task 3: Start and enable NGINX service
-    # Why: Ensures NGINX starts now and after reboots
-    - name: Start and enable NGINX
+
+    - name: Start and enable NGINX service
       systemd:
         name: nginx
-        state: started          # Start the service
-        enabled: yes           # Enable auto-start on boot
+        state: started
+        enabled: yes
       tags: [nginx]
-      
-    # Task 4: Configure UFW firewall
-    # Why: Security - only allow necessary ports
+
+    - name: Deploy custom index.html to NGINX root
+      copy:
+        dest: /var/www/html/index.html
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>My Portfolio</title>
+            <style>
+              @keyframes colorChange {
+                0% { color: red; }
+                50% { color: green; }
+                100% { color: blue; }
+              }
+              h1 {
+                animation: colorChange 2s infinite;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Hello pranay sawant</h1>
+            <h2>Instance ID: <span style="color:green">{{ ansible_ec2_instance_id | default('i-unknown') }}</span></h2>
+            <p>Welcome to crimson typhoon Channel</p>
+          </body>
+          </html>
+      notify: restart nginx
+      tags: [nginx, content]
+
     - name: Allow HTTP traffic through firewall
       ufw:
         rule: allow
         port: "{{ nginx_port }}"
         proto: tcp
       tags: [security]
-      
+
     - name: Allow SSH traffic through firewall
       ufw:
         rule: allow
         port: "22"
         proto: tcp
       tags: [security]
-      
+
     - name: Enable UFW firewall
       ufw:
         state: enabled
-        policy: deny           # Deny all by default
+        policy: deny
       tags: [security]
-      
-    # Task 5: Verify NGINX is serving content
-    # Why: Confirms our deployment worked
+
     - name: Test NGINX is responding
       uri:
         url: "http://localhost:{{ nginx_port }}"
         method: GET
-        status_code: 200       # Expect successful response
+        status_code: 200
       register: nginx_test
       tags: [verification]
-      
-    # Task 6: Display deployment status
+
     - name: Show deployment result
       debug:
         msg: |
@@ -76,8 +93,7 @@
           NGINX Status: {{ nginx_test.status }}
       when: nginx_test.status == 200
       tags: [verification]
-  
-  # Handlers: Tasks that run when notified
+
   handlers:
     - name: restart nginx
       systemd:
