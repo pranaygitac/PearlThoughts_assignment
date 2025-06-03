@@ -63,3 +63,4 @@ jobs:
         # Test if NGINX is responding
         curl -f http://${{ secrets.EC2_HOST }} || exit 1
         echo "✅ NGINX is successfully deployed and responding!"
+        echo "access it at : http://${{ secrets.EC2_HOST }}"
